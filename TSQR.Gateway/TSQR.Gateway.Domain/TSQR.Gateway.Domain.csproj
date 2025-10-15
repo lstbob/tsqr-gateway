@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <RootNamespace>TSQR.Gateway.Domain</RootNamespace>
+    <AssemblyName>TSQR.Gateway.Domain</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.ComponentModel.Annotations" Version="6.0.0" />
+  </ItemGroup>
+
+</Project>
