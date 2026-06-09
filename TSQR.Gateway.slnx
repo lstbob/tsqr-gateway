@@ -1,0 +1,5 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/TSQR.Gateway.Api/TSQR.Gateway.Api.csproj" />
+  </Folder>
+</Solution>
