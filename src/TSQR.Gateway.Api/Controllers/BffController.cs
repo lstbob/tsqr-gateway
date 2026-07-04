@@ -1,5 +1,4 @@
 using System.Net.Http.Headers;
-using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TSQR.Gateway.Api.Dtos;
@@ -9,14 +8,10 @@ namespace TSQR.Gateway.Api.Controllers;
 [ApiController]
 [Route("api/bff")]
 [Authorize]
-public sealed class BffController : ControllerBase
+public sealed class BffController(IHttpClientFactory httpClientFactory) : ControllerBase
 {
-    private readonly IHttpClientFactory _httpClientFactory;
-
-    public BffController(IHttpClientFactory httpClientFactory)
-    {
-        _httpClientFactory = httpClientFactory;
-    }
+    private const string AutheoClient = "autheo";
+    private const string ToolLibClient = "tool-lib";
 
     [HttpGet("dashboard")]
     [ProducesResponseType(typeof(DashboardResponse), StatusCodes.Status200OK)]
@@ -25,11 +20,13 @@ public sealed class BffController : ControllerBase
     {
         var token = HttpContext.Request.Headers.Authorization.ToString().Replace("Bearer ", "");
 
-        using var client = _httpClientFactory.CreateClient();
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var autheoClient = httpClientFactory.CreateClient(AutheoClient);
+        var toolLibClient = httpClientFactory.CreateClient(ToolLibClient);
+        autheoClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        toolLibClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-        var meTask = client.GetAsync("http://localhost:5068/api/auth/me", ct);
-        var statsTask = client.GetAsync("http://localhost:5079/api/dashboard/stats", ct);
+        var meTask = autheoClient.GetAsync("/api/auth/me", ct);
+        var statsTask = toolLibClient.GetAsync("/api/dashboard/stats", ct);
 
         await Task.WhenAll(meTask, statsTask);
 
@@ -41,7 +38,8 @@ public sealed class BffController : ControllerBase
 
         var user = await meResponse.Content.ReadFromJsonAsync<UserInfo>(cancellationToken: ct);
         var stats = statsResponse.IsSuccessStatusCode
-            ? await statsResponse.Content.ReadFromJsonAsync<DashboardStats>(cancellationToken: ct) ?? new DashboardStats(0, 0, 0, 0, 0)
+            ? await statsResponse.Content.ReadFromJsonAsync<DashboardStats>(cancellationToken: ct)
+                ?? new DashboardStats(0, 0, 0, 0, 0)
             : new DashboardStats(0, 0, 0, 0, 0);
 
         return Ok(new DashboardResponse(user!, stats));
