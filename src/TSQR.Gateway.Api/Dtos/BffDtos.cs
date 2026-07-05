@@ -6,4 +6,6 @@ public record DashboardStats(int TotalTools, int TotalMembers, int ActiveLoans, 
 
 public record SoupKitchenDashboardStats(int TotalEvents, int UpcomingEvents, int TotalVolunteers, int TotalDonations, int TotalGuests);
 
-public record DashboardResponse(UserInfo User, DashboardStats Stats, SoupKitchenDashboardStats SoupKitchenStats);
+public record CommunitiesDashboardStats(int TotalCommunities, int Active, int Pending, int Suspended, int Archived);
+
+public record DashboardResponse(UserInfo User, DashboardStats Stats, SoupKitchenDashboardStats SoupKitchenStats, CommunitiesDashboardStats CommunitiesStats);

@@ -62,6 +62,11 @@ builder.Services.AddHttpClient("soup-kitchen", c =>
     var url = builder.Configuration["Services:SoupKitchen"] ?? "http://localhost:5080";
     c.BaseAddress = new Uri(url);
 });
+builder.Services.AddHttpClient("communities", c =>
+{
+    var url = builder.Configuration["Services:Communities"] ?? "http://localhost:5090";
+    c.BaseAddress = new Uri(url);
+});
 builder.Services.AddControllers();
 
 var app = builder.Build();
