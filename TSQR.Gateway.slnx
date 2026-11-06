@@ -2,4 +2,7 @@
   <Folder Name="/src/">
     <Project Path="src/TSQR.Gateway.Api/TSQR.Gateway.Api.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/TSQR.Gateway.Tests/TSQR.Gateway.Tests.csproj" />
+  </Folder>
 </Solution>
