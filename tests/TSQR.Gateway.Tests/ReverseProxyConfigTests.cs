@@ -41,6 +41,31 @@ public class ReverseProxyConfigTests
     [Theory]
     [InlineData("appsettings.json")]
     [InlineData("appsettings.Docker.json")]
+    public void SoupKitchenRoutes_StripExternalPrefix(string fileName)
+    {
+        var configuration = Load(fileName);
+        var routes = configuration.GetSection("ReverseProxy:Routes").GetChildren()
+            .Where(route => route["ClusterId"] == "soup-kitchen")
+            .ToList();
+
+        Assert.NotEmpty(routes);
+
+        foreach (var route in routes)
+        {
+            var path = route["Match:Path"];
+            Assert.NotNull(path);
+            Assert.StartsWith("/api/soup-kitchen", path);
+
+            var transforms = route.GetSection("Transforms").GetChildren().ToList();
+            Assert.Equal(2, transforms.Count);
+            Assert.Equal("/api/soup-kitchen", transforms[0]["PathRemovePrefix"]);
+            Assert.Equal("/api", transforms[1]["PathPrefix"]);
+        }
+    }
+
+    [Theory]
+    [InlineData("appsettings.json")]
+    [InlineData("appsettings.Docker.json")]
     public void Clusters_HaveDestinations(string fileName)
     {
         var configuration = Load(fileName);
