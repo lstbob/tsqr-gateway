@@ -12,7 +12,7 @@ public class BffControllerTests
     [Fact]
     public async Task Dashboard_ForwardsTokenAndCombinesResponses()
     {
-        var user = new UserInfo(Guid.NewGuid(), "ada@example.com", "Ada Lovelace", "Admin", null);
+        var user = new UserInfo(Guid.NewGuid(), "ada@example.com", "Ada Lovelace", "Admin");
         var stats = new DashboardStats(10, 20, 3, 1, 2);
         var soupKitchenStats = new SoupKitchenDashboardStats(5, 2, 8, 4, 30);
         var communitiesStats = new CommunitiesDashboardStats(6, 4, 1, 1, 0);
@@ -62,7 +62,7 @@ public class BffControllerTests
     [Fact]
     public async Task Dashboard_DownstreamFailures_ReturnZeroFilledStats()
     {
-        var user = new UserInfo(Guid.NewGuid(), "ada@example.com", "Ada Lovelace", "Member", null);
+        var user = new UserInfo(Guid.NewGuid(), "ada@example.com", "Ada Lovelace", "Member");
         var soupKitchenStats = new SoupKitchenDashboardStats(5, 2, 8, 4, 30);
         var autheo = new StubHandler(_ => Json(user));
         var toolLib = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.InternalServerError));
