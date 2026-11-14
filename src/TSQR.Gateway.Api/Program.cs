@@ -15,9 +15,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         // In Docker the gateway listens on plain HTTP inside the container.
         // RequireHttpsMetadata would reject every request there. Disable it
         // explicitly; TLS termination is the job of an upstream ingress.
-        options.RequireHttpsMetadata = builder.Environment.IsDevelopment()
-            ? false
-            : false;
+        options.RequireHttpsMetadata = false;
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
