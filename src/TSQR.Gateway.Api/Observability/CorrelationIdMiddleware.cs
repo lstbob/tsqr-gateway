@@ -16,7 +16,17 @@ public sealed class CorrelationIdMiddleware(
     {
         var correlationId = CorrelationId.Resolve(context);
         context.Items[CorrelationId.ItemKey] = correlationId;
-        context.Response.Headers[CorrelationId.HeaderName] = correlationId;
+
+        // Downstream services echo the same header. Use OnStarting so the
+        // gateway only supplies it for responses that do not already have one
+        // (BFF/error responses) and never duplicates the proxied header.
+        context.Response.OnStarting(() =>
+        {
+            if (!context.Response.Headers.ContainsKey(CorrelationId.HeaderName))
+                context.Response.Headers[CorrelationId.HeaderName] = correlationId;
+
+            return Task.CompletedTask;
+        });
 
         var activity = Activity.Current;
         activity?.SetTag("correlation.id", correlationId);
