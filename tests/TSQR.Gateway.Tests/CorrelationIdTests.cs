@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.Logging.Abstractions;
 using TSQR.Gateway.Api.Observability;
 
@@ -10,6 +11,7 @@ public class CorrelationIdTests
     public async Task Middleware_EchoesSafeInboundCorrelationId()
     {
         var context = new DefaultHttpContext();
+        context.Features.Set<IHttpResponseFeature>(new ImmediateResponseFeature());
         context.Request.Headers[CorrelationId.HeaderName] = "client-correlation-123";
         var nextCalled = false;
 
@@ -97,6 +99,14 @@ public class CorrelationIdTests
         {
             Request = request;
             return Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK));
+        }
+    }
+
+    private sealed class ImmediateResponseFeature : HttpResponseFeature
+    {
+        public override void OnStarting(Func<object, Task> callback, object state)
+        {
+            callback(state).GetAwaiter().GetResult();
         }
     }
 }
