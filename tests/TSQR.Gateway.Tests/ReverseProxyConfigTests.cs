@@ -64,6 +64,29 @@ public class ReverseProxyConfigTests
     }
 
     [Theory]
+    [InlineData("appsettings.json", "/api/soup-kitchen/guests")]
+    [InlineData("appsettings.json", "/api/soup-kitchen/donations")]
+    [InlineData("appsettings.json", "/api/soup-kitchen/volunteers")]
+    [InlineData("appsettings.Docker.json", "/api/soup-kitchen/guests")]
+    [InlineData("appsettings.Docker.json", "/api/soup-kitchen/donations")]
+    [InlineData("appsettings.Docker.json", "/api/soup-kitchen/volunteers")]
+    public void SoupKitchenPiiReads_AreNotPublic(string fileName, string path)
+    {
+        var configuration = Load(fileName);
+        var routes = configuration.GetSection("ReverseProxy:Routes").GetChildren().ToList();
+
+        var publicRoute = routes.SingleOrDefault(route =>
+            string.Equals(route["Match:Path"], path, StringComparison.Ordinal) &&
+            !string.Equals(route["AuthorizationPolicy"], "Authenticated", StringComparison.Ordinal));
+
+        Assert.Null(publicRoute);
+
+        var catchAll = Assert.Single(routes, route => route.Key == "soup-kitchen-api");
+        Assert.Equal("Authenticated", catchAll["AuthorizationPolicy"]);
+        Assert.Equal("/api/soup-kitchen/{**catch-all}", catchAll["Match:Path"]);
+    }
+
+    [Theory]
     [InlineData("appsettings.json")]
     [InlineData("appsettings.Docker.json")]
     public void Clusters_HaveDestinations(string fileName)
