@@ -64,13 +64,21 @@ public class ReverseProxyConfigTests
     }
 
     [Theory]
+    [InlineData("appsettings.json", "/api/soup-kitchen/dashboard/stats")]
+    [InlineData("appsettings.json", "/api/soup-kitchen/events")]
+    [InlineData("appsettings.json", "/api/soup-kitchen/events/1")]
+    [InlineData("appsettings.json", "/api/soup-kitchen/meals")]
     [InlineData("appsettings.json", "/api/soup-kitchen/guests")]
     [InlineData("appsettings.json", "/api/soup-kitchen/donations")]
     [InlineData("appsettings.json", "/api/soup-kitchen/volunteers")]
+    [InlineData("appsettings.Docker.json", "/api/soup-kitchen/dashboard/stats")]
+    [InlineData("appsettings.Docker.json", "/api/soup-kitchen/events")]
+    [InlineData("appsettings.Docker.json", "/api/soup-kitchen/events/1")]
+    [InlineData("appsettings.Docker.json", "/api/soup-kitchen/meals")]
     [InlineData("appsettings.Docker.json", "/api/soup-kitchen/guests")]
     [InlineData("appsettings.Docker.json", "/api/soup-kitchen/donations")]
     [InlineData("appsettings.Docker.json", "/api/soup-kitchen/volunteers")]
-    public void SoupKitchenPiiReads_AreNotPublic(string fileName, string path)
+    public void SoupKitchenReads_AreNotPublic(string fileName, string path)
     {
         var configuration = Load(fileName);
         var routes = configuration.GetSection("ReverseProxy:Routes").GetChildren().ToList();
