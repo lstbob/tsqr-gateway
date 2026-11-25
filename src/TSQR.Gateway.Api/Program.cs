@@ -1,10 +1,8 @@
-using System.Text;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
+using TSQR.Common.WebApi;
 using TSQR.Gateway.Api.Observability;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -69,30 +67,7 @@ builder.Services.AddTransient<CorrelationIdHandler>();
 builder.Services.ConfigureHttpClientDefaults(httpClient =>
     httpClient.AddHttpMessageHandler<CorrelationIdHandler>());
 
-var jwtSection = builder.Configuration.GetSection("Jwt");
-var jwtKey = jwtSection["Key"] ?? throw new InvalidOperationException("JWT Key not configured.");
-var jwtIssuer = jwtSection["Issuer"] ?? "tsqr-autheo";
-var jwtAudience = jwtSection["Audience"] ?? "tsqr-services";
-
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        // In Docker the gateway listens on plain HTTP inside the container.
-        // RequireHttpsMetadata would reject every request there. Disable it
-        // explicitly; TLS termination is the job of an upstream ingress.
-        options.RequireHttpsMetadata = false;
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = jwtIssuer,
-            ValidAudience = jwtAudience,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
-            ClockSkew = TimeSpan.Zero
-        };
-    });
+builder.Services.AddTsqrJwtAuthentication(builder.Configuration);
 
 builder.Services.AddAuthorization(options =>
 {
