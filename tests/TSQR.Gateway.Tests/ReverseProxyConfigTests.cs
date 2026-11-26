@@ -41,6 +41,21 @@ public class ReverseProxyConfigTests
     [Theory]
     [InlineData("appsettings.json")]
     [InlineData("appsettings.Docker.json")]
+    public void JwksRoute_IsPublicAndTargetsAutheo(string fileName)
+    {
+        var configuration = Load(fileName);
+        var route = configuration.GetSection("ReverseProxy:Routes").GetChildren()
+            .SingleOrDefault(candidate => candidate.Key == "autheo-jwks");
+
+        Assert.NotNull(route);
+        Assert.Equal("autheo", route["ClusterId"]);
+        Assert.Equal("/.well-known/jwks.json", route["Match:Path"]);
+        Assert.Null(route["AuthorizationPolicy"]);
+    }
+
+    [Theory]
+    [InlineData("appsettings.json")]
+    [InlineData("appsettings.Docker.json")]
     public void SoupKitchenRoutes_StripExternalPrefix(string fileName)
     {
         var configuration = Load(fileName);
