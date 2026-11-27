@@ -53,6 +53,16 @@ public class ReverseProxyConfigTests
         Assert.Null(route["AuthorizationPolicy"]);
     }
 
+    [Fact]
+    public void JwtAudience_IsGateway()
+    {
+        var configuration = Load("appsettings.json");
+
+        Assert.Equal(
+            TSQR.Gateway.Api.Security.ServiceAudiences.Gateway,
+            configuration["Jwt:Audience"]);
+    }
+
     [Theory]
     [InlineData("appsettings.json")]
     [InlineData("appsettings.Docker.json")]

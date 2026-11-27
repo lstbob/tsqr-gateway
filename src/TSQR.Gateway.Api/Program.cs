@@ -4,6 +4,7 @@ using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using TSQR.Common.WebApi;
 using TSQR.Gateway.Api.Observability;
+using TSQR.Gateway.Api.Security;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -67,6 +68,21 @@ builder.Services.AddTransient<CorrelationIdHandler>();
 builder.Services.ConfigureHttpClientDefaults(httpClient =>
     httpClient.AddHttpMessageHandler<CorrelationIdHandler>());
 
+builder.Services.AddMemoryCache();
+builder.Services.AddSingleton<IServiceTokenExchange, ServiceTokenExchange>();
+builder.Services.AddHttpClient(ServiceTokenExchange.HttpClientName, client =>
+{
+    var url = builder.Configuration["Services:Autheo"] ?? "http://localhost:5068";
+    client.BaseAddress = new Uri(url);
+    client.Timeout = TimeSpan.FromSeconds(5);
+});
+
+if (string.IsNullOrWhiteSpace(builder.Configuration["InternalApi:Key"]))
+{
+    throw new InvalidOperationException(
+        "InternalApi:Key is required for gateway token exchange.");
+}
+
 builder.Services.AddTsqrJwtAuthentication(builder.Configuration);
 
 builder.Services.AddAuthorization(options =>
@@ -75,7 +91,8 @@ builder.Services.AddAuthorization(options =>
 });
 
 builder.Services.AddReverseProxy()
-    .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"));
+    .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"))
+    .AddTransforms(ServiceTokenExchangeTransform.Add);
 
 // Named HTTP clients used by the BffController so it is not pinned to
 // hard-coded localhost URLs. Addresses come from configuration ("Services"
