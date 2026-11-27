@@ -2,13 +2,16 @@ using System.Net.Http.Headers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TSQR.Gateway.Api.Dtos;
+using TSQR.Gateway.Api.Security;
 
 namespace TSQR.Gateway.Api.Controllers;
 
 [ApiController]
 [Route("api/bff")]
 [Authorize]
-public sealed class BffController(IHttpClientFactory httpClientFactory) : ControllerBase
+public sealed class BffController(
+    IHttpClientFactory httpClientFactory,
+    IServiceTokenExchange serviceTokenExchange) : ControllerBase
 {
     private const string AutheoClient = "autheo";
     private const string ToolLibClient = "tool-lib";
@@ -20,16 +23,65 @@ public sealed class BffController(IHttpClientFactory httpClientFactory) : Contro
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<DashboardResponse>> Dashboard(CancellationToken ct)
     {
-        var token = HttpContext.Request.Headers.Authorization.ToString().Replace("Bearer ", "");
+        var authorization = HttpContext.Request.Headers.Authorization.ToString();
+        if (!authorization.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+            return Unauthorized();
+
+        var userToken = authorization["Bearer ".Length..].Trim();
+        var autheoTokenTask = serviceTokenExchange.ExchangeAsync(
+            userToken,
+            ServiceAudiences.Autheo,
+            ct);
+        var toolLibTokenTask = serviceTokenExchange.ExchangeAsync(
+            userToken,
+            ServiceAudiences.ToolLib,
+            ct);
+        var soupKitchenTokenTask = serviceTokenExchange.ExchangeAsync(
+            userToken,
+            ServiceAudiences.SoupKitchen,
+            ct);
+        var communitiesTokenTask = serviceTokenExchange.ExchangeAsync(
+            userToken,
+            ServiceAudiences.Communities,
+            ct);
+
+        await Task.WhenAll(
+            autheoTokenTask,
+            toolLibTokenTask,
+            soupKitchenTokenTask,
+            communitiesTokenTask);
+
+        var autheoToken = await autheoTokenTask;
+        if (string.IsNullOrWhiteSpace(autheoToken))
+            return Unauthorized();
 
         var autheoClient = httpClientFactory.CreateClient(AutheoClient);
         var toolLibClient = httpClientFactory.CreateClient(ToolLibClient);
         var soupKitchenClient = httpClientFactory.CreateClient(SoupKitchenClient);
         var communitiesClient = httpClientFactory.CreateClient(CommunitiesClient);
-        autheoClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        toolLibClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        soupKitchenClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        communitiesClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        autheoClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", autheoToken);
+
+        var toolLibToken = await toolLibTokenTask;
+        if (!string.IsNullOrWhiteSpace(toolLibToken))
+        {
+            toolLibClient.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", toolLibToken);
+        }
+
+        var soupKitchenToken = await soupKitchenTokenTask;
+        if (!string.IsNullOrWhiteSpace(soupKitchenToken))
+        {
+            soupKitchenClient.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", soupKitchenToken);
+        }
+
+        var communitiesToken = await communitiesTokenTask;
+        if (!string.IsNullOrWhiteSpace(communitiesToken))
+        {
+            communitiesClient.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", communitiesToken);
+        }
 
         var meTask = autheoClient.GetAsync("/api/auth/me", ct);
         var statsTask = toolLibClient.GetAsync("/api/dashboard/stats", ct);
