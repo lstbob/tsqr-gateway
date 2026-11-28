@@ -9,6 +9,7 @@ public static class ServiceAudiences
     public const string Identity = "tsqr-identity";
     public const string SoupKitchen = "tsqr-soup-kitchen";
     public const string Communities = "tsqr-communities";
+    public const string Learning = "tsqr-learning";
 
     /// <summary>
     /// Maps a YARP cluster id (<c>tool-lib</c>) to the audience its service

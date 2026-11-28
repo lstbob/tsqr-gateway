@@ -68,6 +68,7 @@ public class ServiceTokenExchangeTests
     [InlineData("identity", ServiceAudiences.Identity)]
     [InlineData("soup-kitchen", ServiceAudiences.SoupKitchen)]
     [InlineData("communities", ServiceAudiences.Communities)]
+    [InlineData("learning", ServiceAudiences.Learning)]
     public void ForCluster_MapsClusterToServiceAudience(
         string clusterId,
         string expectedAudience)

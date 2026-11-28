@@ -122,6 +122,56 @@ public class ReverseProxyConfigTests
     [Theory]
     [InlineData("appsettings.json")]
     [InlineData("appsettings.Docker.json")]
+    public void LearningRoutes_StripExternalPrefix(string fileName)
+    {
+        var configuration = Load(fileName);
+        var routes = configuration.GetSection("ReverseProxy:Routes").GetChildren()
+            .Where(route => route["ClusterId"] == "learning")
+            .ToList();
+
+        Assert.NotEmpty(routes);
+
+        foreach (var route in routes)
+        {
+            var path = route["Match:Path"];
+            Assert.NotNull(path);
+            Assert.StartsWith("/api/learning", path);
+
+            var transforms = route.GetSection("Transforms").GetChildren().ToList();
+            Assert.Equal(2, transforms.Count);
+            Assert.Equal("/api/learning", transforms[0]["PathRemovePrefix"]);
+            Assert.Equal("/api", transforms[1]["PathPrefix"]);
+        }
+    }
+
+    [Theory]
+    [InlineData("appsettings.json", "/api/learning/decks")]
+    [InlineData("appsettings.json", "/api/learning/decks/1")]
+    [InlineData("appsettings.json", "/api/learning/practice/queue")]
+    [InlineData("appsettings.json", "/api/learning/stats")]
+    [InlineData("appsettings.Docker.json", "/api/learning/decks")]
+    [InlineData("appsettings.Docker.json", "/api/learning/decks/1")]
+    [InlineData("appsettings.Docker.json", "/api/learning/practice/queue")]
+    [InlineData("appsettings.Docker.json", "/api/learning/stats")]
+    public void LearningReads_AreNotPublic(string fileName, string path)
+    {
+        var configuration = Load(fileName);
+        var routes = configuration.GetSection("ReverseProxy:Routes").GetChildren().ToList();
+
+        var publicRoute = routes.SingleOrDefault(route =>
+            string.Equals(route["Match:Path"], path, StringComparison.Ordinal) &&
+            !string.Equals(route["AuthorizationPolicy"], "Authenticated", StringComparison.Ordinal));
+
+        Assert.Null(publicRoute);
+
+        var catchAll = Assert.Single(routes, route => route.Key == "learning-api");
+        Assert.Equal("Authenticated", catchAll["AuthorizationPolicy"]);
+        Assert.Equal("/api/learning/{**catch-all}", catchAll["Match:Path"]);
+    }
+
+    [Theory]
+    [InlineData("appsettings.json")]
+    [InlineData("appsettings.Docker.json")]
     public void Clusters_HaveDestinations(string fileName)
     {
         var configuration = Load(fileName);
